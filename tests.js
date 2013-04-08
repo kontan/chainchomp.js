@@ -5,7 +5,7 @@ test("general evalution", function() {
 });
 
 test("strict mode violation", function() {
-	throws(function(){ chainchomp('hoge = 100;'); });
+	throws(function(){ chainchomp('foo = 100;'); });
 });
 
 test("global object steal", function() {
@@ -20,12 +20,15 @@ test( "attacking window object", function() {
 });
 
 test( "callback safety", function() {
-   	throws(chainchomp('return function(){ window.location = "http://example.com/"; };'));
+   	throws(function(){ chainchomp('return function(){ window.location = "http://example.com/"; };')(); });
 });
 
 test("global object overwriting", function() {
     chainchomp('Math = undefined;');
-    ok(Math.abs(-10) === 10);    
+    ok(Math.abs(-10) === 10);
+
+    throws(function(){ chainchomp('Math.sin = function(){ return 100; };') });
+    ok(Math.sin(0) === 0);
 
     chainchomp('undefined = 10;');
     ok(undefined !== 10);

@@ -81,6 +81,37 @@ function chainchomp(script, scope, options){
         'encodeURIComponent': encodeURIComponent
     };
 
+    // seal standard library objects
+    Object.getOwnPropertyNames(exposed).forEach(function(k, i){
+        var v = exposed[k];
+        if(v && (typeof v === 'object' || typeof v === 'function')){
+            var clone;
+            if(typeof v === 'object'){
+                clone = {};
+                Object.getOwnPropertyNames(v).forEach(function(k){
+                    Object.defineProperty(clone, k, { configurable: false, writable: false, value: v[k] });
+                });
+                Object.keys(scope).forEach(function(k){
+                    Object.defineProperty(clone, k, { configurable: false, writable: false, value: v[k] });
+                });                
+            }else if(typeof v === 'function'){
+                var args = [];
+                for(var i = 0; i < v.length; i++) args.push('arg' + i);
+                args.push('return v.apply(this, arguments);'); 
+                // ISSUE: Every cloned function's name are "annonymous".
+                clone = construct(Function, args);
+
+                // ISSUE: Function.name can't be modified
+                //if(typeof v === 'function'){
+                //    clone.name = v.name;
+                //    clone.length = v.length;
+                //}
+            } 
+            Object.seal(clone);
+            exposed[k] = clone;
+        }
+    });
+
     // Expose custom properties 
     Object.keys(scope).forEach(function(k){
         exposed[k] = scope[k];
