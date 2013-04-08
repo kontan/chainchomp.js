@@ -85,40 +85,12 @@ function chainchomp(script, scope, options){
     Object.getOwnPropertyNames(exposed).forEach(function(k, i){
         var v = exposed[k];
         if(v && (typeof v === 'object' || typeof v === 'function')){
-            var clone;
-            if(typeof v === 'object'){
-                clone = {};
-                Object.getOwnPropertyNames(v).forEach(function(k){
-                    Object.defineProperty(clone, k, { configurable: false, writable: false, value: v[k] });
-                });
-                Object.keys(scope).forEach(function(k){
-                    Object.defineProperty(clone, k, { configurable: false, writable: false, value: v[k] });
-                });                
-            }else if(typeof v === 'function'){
-                //var args = ['func'];
-                //for(var i = 0; i < v.length; i++) args.push('arg' + i);
-                //args.push('return func.apply(this, arguments);'); 
-                // ISSUE: Every cloned function's name are "annonymous".
-                //clone = construct(Function, args);
-
-                // Directly exposing build-in functions is safe?
-                clone = v;
-
-                // ISSUE: Function.name can't be modified
-                //if(typeof v === 'function'){
-                //    clone.name = v.name;
-                //    clone.length = v.length;
-                //}
-            }else{
-                throw "internal error";
-            }
-
-            // sealing std objects may prevents prototype.js-like library?
-            Object.seal(clone);
-            
-            exposed[k] = clone;
+            Object.freeze(v);
+            if(v.prototype) Object.freeze(v.prototype);
         }
     });
+    
+    // freeze Empty
 
     // Expose custom properties 
     Object.keys(scope).forEach(function(k){
@@ -161,6 +133,13 @@ function chainchomp(script, scope, options){
     args.push('"use strict";\n' + script);
     var f = construct(Function, args);
 
+    // Function.__proto__ protection hack
+    f.apply = Function.__proto__.apply;
+    var _apply = Function.__proto__.apply;
+    var _call = Function.__proto__.call;
+    Function.__proto__.apply = undefined;
+    Function.__proto__.call = undefined;
+
     // call the sandboxed function
     try{
         return f.apply(undefined, values);
@@ -168,5 +147,8 @@ function chainchomp(script, scope, options){
         if( ! options.enableEval){
             eval = _eval;
         }
+
+        Function.__proto__.call = _call;
+        Function.__proto__.apply = _apply;
     }
 }

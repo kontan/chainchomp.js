@@ -81,3 +81,13 @@ test("external library access protection", function() {
 test("direct id acccess", function() {
 	throws(function(){ chainchomp('var doc = qunit.ownerDocument; doc.querySelector("h1").textContent = "Cracked you!";'); });    
 });
+
+test("function constructor acccess", function() {
+	throws(function(){ chainchomp('var f = function(){};\n return f.constructor.apply(undefined, ["return this"]);'); });
+	throws(function(){ chainchomp('var f = function(){};\n return f.constructor.call(undefined, "return this");'); });    
+});
+
+test("primitive implicit conversion aceess", function() {
+	throws(function(){ chainchomp('var s = "hoge";\n s.__proto__.toString = function(){ return "hoge"; };'); });
+	ok("piyo".toString() !== "hoge");
+});
