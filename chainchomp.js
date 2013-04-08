@@ -111,7 +111,6 @@ function chainchomp(script, scope, options){
 
     // call the sandboxed function
     try{
-        // 足りなかった引数は undefined になるので、value を減らせる？
         return f.apply(undefined, values);
     }finally{
         if( ! options.enableEval){
