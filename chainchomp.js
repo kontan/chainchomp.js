@@ -82,16 +82,17 @@ function chainchomp(script, scope, options){
         'encodeURIComponent': encodeURIComponent
     };
 
-    // freeze standard library objects
-    Object.getOwnPropertyNames(exposed).forEach(function(k, i){
-        var v = exposed[k];
+    // freeze exposed objects
+    function freeze(v){
         if(v && (typeof v === 'object' || typeof v === 'function')){
             Object.freeze(v);
-            if(v.prototype) Object.freeze(v.prototype);
-        }
+            freeze(v.prototype);
+            //freeze(v.__proto__);
+        }        
+    }
+    Object.getOwnPropertyNames(exposed).forEach(function(k, i){
+        freeze(exposed[k]);
     });
-    
-    // freeze Empty
 
     // Expose custom properties 
     Object.keys(scope).forEach(function(k){
@@ -109,7 +110,7 @@ function chainchomp(script, scope, options){
     Object.getOwnPropertyNames(global).forEach(ban);
     for(var k in global){
         ban(k);
-    }    
+    }
 
     // ban all ids of the elements
     function traverse(elem){
@@ -134,47 +135,34 @@ function chainchomp(script, scope, options){
     args.push('"use strict";\n' + script);
     var f = construct(Function, args);
 
-    // Function.__proto__ protection hack
-    f.apply    = Function.__proto__.apply;
-    f.toString = Function.__proto__.toString;
-    var _apply       = Function.__proto__.apply;
-    var _call        = Function.__proto__.call;
-    var _bind        = Function.__proto__.bind;
-    var _constructor = Function.__proto__.constructor;
-    var _length      = Function.__proto__.length;
-    var _name        = Function.__proto__.name;
-    var _toString    = Function.__proto__.toString;
-    var _proto       = Function.__proto__.__proto__;
-    Function.__proto__.apply       = undefined;
-    Function.__proto__.call        = undefined;
-    Function.__proto__.bind        = undefined;
-    Function.__proto__.constructor = undefined;
-    Function.__proto__.length      = undefined;
-    Function.__proto__.name        = undefined;
+    // evacuate properties of Function.__proto__
+    var evacuatedProperties = {};
+    Object.getOwnPropertyNames(Function.__proto__).forEach(function(k){
+        evacuatedProperties[k] = Function.__proto__[k];
+        Function.__proto__[k] = undefined;
+    });
 
     // ISSUE:     
     //     Function.__proto__.toString = undefined
     // cause a crush in Chrome
     Function.__proto__.toString    = function(){ return ""; };
-    
-    Function.__proto__._proto      = undefined;
+
+    // Function.apply enabling　hack
+    f.apply    = evacuatedProperties['apply'];
+    f.toString = evacuatedProperties['toString'];
 
     // call the sandboxed function
     try{
         return f.apply(undefined, values);
     }finally{
+        // restore eval
         if( ! options.enableEval){
             eval = _eval;
         }
 
-        Function.__proto__.constructor = _constructor;
-        Function.__proto__.bind        = _bind;
-        Function.__proto__.call        = _call;
-        Function.__proto__.apply       = _apply;
-        Function.__proto__.constructor = _constructor;
-        Function.__proto__.length      = _length;
-        Function.__proto__.name        = _name;
-        Function.__proto__.toString    = _toString;
-        Function.__proto__._proto      = _proto;
+        // restore properties of Function.__proto__
+        Object.getOwnPropertyNames(Function.__proto__).forEach(function(k){ 
+            Function.__proto__[k] = evacuatedProperties[k];
+        });  
     }
 }

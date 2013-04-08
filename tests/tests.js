@@ -9,10 +9,10 @@ test("strict mode violation", function() {
 });
 
 test("global object steal", function() {
-	throws(function(){ chainchomp('var global = this; global.hoge = "invalid data";'); });
-   	throws(function(){ chainchomp('var global = (function(){return this})(); global.hoge = "invalid data";'); });
-   	throws(function(){ chainchomp('var global = ("global",eval)("this"); global.hoge = "invalid data";'); }); 
-   	throws(function(){ chainchomp('var global = new Function("return this")(); global.hoge = "invalid data";'); }); 
+	strictEqual(chainchomp('return this;'), undefined);
+   	strictEqual(chainchomp('return (function(){return this})();'), undefined);
+   	throws(function(){ chainchomp('return ("global",eval)("this");'); }); 
+   	throws(function(){ chainchomp('return new Function("return this")();'); }); 
 });
 
 test( "attacking window object", function() {
@@ -75,9 +75,12 @@ test("direct id acccess", function() {
 	throws(function(){ chainchomp('var doc = qunit.ownerDocument; doc.querySelector("h1").textContent = "Cracked you!";'); });    
 });
 
-test("function constructor acccess", function() {
+test("function properties acccess", function() {
 	throws(function(){ chainchomp('var f = function(){};\n return f.constructor.apply(undefined, ["return this"]);'); });
-	throws(function(){ chainchomp('var f = function(){};\n return f.constructor.call(undefined, "return this");'); });    
+	throws(function(){ chainchomp('var f = function(){};\n return f.constructor.call(undefined, "return this");'); });  
+
+	throws(function(){ chainchomp('var f = function(){};\n return f.__proto__.apply(undefined, ["return this"]);'); });
+	throws(function(){ chainchomp('var f = function(){};\n return f.__proto__.call(undefined, "return this");'); });    
 });
 
 test("primitive implicit conversion aceess", function() {
