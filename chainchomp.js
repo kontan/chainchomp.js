@@ -44,7 +44,7 @@ function chainchomp(script, scope, options){
     // You should make eval enable only when you are debugging this library.  
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
     if( ! options.enableEval){
-        eval = undefined;
+        //eval = undefined;
     }
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -129,6 +129,21 @@ function chainchomp(script, scope, options){
     for(var k in global){
         ban(k);
     }    
+
+    // ban all ids of the elements
+    function traverse(elem){
+        var id = elem.getAttribute && elem.getAttribute('id');
+        if(id){
+            ban(id);
+        }
+        var childs = elem.childNodes;
+        for(var i = 0; i < childs.length; i++){
+            traverse(childs[i]);
+        }
+    }    
+    for(var i = 0; i < document.childNodes.length; i++){
+        traverse(document.childNodes[i]);
+    }
 
     // create sandboxed function
     var args = Object.keys(exposed);

@@ -77,3 +77,7 @@ test("external library access protection", function() {
 	ok($("title").text() === 'chainchomp.js unit tests');
     throws(function(){ chainchomp('$("title").text("invalid text");'); });    
 });
+
+test("direct id acccess", function() {
+	throws(function(){ chainchomp('var doc = output.ownerDocument; doc.querySelector("h1").textContent = "Cracked you!";'); });    
+});
