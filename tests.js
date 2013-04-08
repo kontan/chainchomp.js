@@ -79,5 +79,5 @@ test("external library access protection", function() {
 });
 
 test("direct id acccess", function() {
-	throws(function(){ chainchomp('var doc = output.ownerDocument; doc.querySelector("h1").textContent = "Cracked you!";'); });    
+	throws(function(){ chainchomp('var doc = qunit.ownerDocument; doc.querySelector("h1").textContent = "Cracked you!";'); });    
 });
