@@ -1,7 +1,7 @@
 test("general evalution", function() {
 	strictEqual(chainchomp('return 1 + 2 * 3 - 4;'), 1 + 2 * 3 - 4);
 	strictEqual(chainchomp('return Math.sin(3.14);'), Math.sin(3.14));
-
+	strictEqual(chainchomp('return encodeURIComponent("http://example.com/");'), "http%3A%2F%2Fexample.com%2F");
 });
 
 test("strict mode violation", function() {

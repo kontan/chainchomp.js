@@ -95,19 +95,27 @@ function chainchomp(script, scope, options){
                     Object.defineProperty(clone, k, { configurable: false, writable: false, value: v[k] });
                 });                
             }else if(typeof v === 'function'){
-                var args = [];
-                for(var i = 0; i < v.length; i++) args.push('arg' + i);
-                args.push('return v.apply(this, arguments);'); 
+                //var args = ['func'];
+                //for(var i = 0; i < v.length; i++) args.push('arg' + i);
+                //args.push('return func.apply(this, arguments);'); 
                 // ISSUE: Every cloned function's name are "annonymous".
-                clone = construct(Function, args);
+                //clone = construct(Function, args);
+
+                // Directly exposing build-in functions is safe?
+                clone = v;
 
                 // ISSUE: Function.name can't be modified
                 //if(typeof v === 'function'){
                 //    clone.name = v.name;
                 //    clone.length = v.length;
                 //}
-            } 
+            }else{
+                throw "internal error";
+            }
+
+            // sealing std objects may prevents prototype.js-like library?
             Object.seal(clone);
+            
             exposed[k] = clone;
         }
     });
@@ -141,10 +149,8 @@ function chainchomp(script, scope, options){
             traverse(childs[i]);
         }
     }    
-    for(var i = 0; i < document.childNodes.length; i++){
-        traverse(document.childNodes[i]);
-    }
-
+    traverse(document);
+    
     // create sandboxed function
     var args = Object.keys(exposed);
     var values = [];
