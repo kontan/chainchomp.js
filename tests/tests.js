@@ -32,13 +32,6 @@ test("global object overwriting", function() {
 
     chainchomp('undefined = 10;');
     ok(undefined !== 10);
-
-	chainchomp('log(__proto__); __proto__ = 20;', { log: function(s){ console.log(s);} });
-    ok(__proto__ !== 20);
-    ok(window.__proto__ !== 20);
-
-    chainchomp('log(prototype); prototype = 30;', { log: function(s){ console.log(s);} });
-    ok(window.prototype !== 30);
 });
 
 test("custom object safe access", function() {

@@ -6,8 +6,9 @@
  *
  * ## Restrictions
  *
- * * Some objects are banned: eval, Function.
+ * * Some objects are banned: eval, Function, etc..
  * * Strict mode only. All guest code are run under the strict mode automatically.
+ * * String, Number, Boolean are freezed.
  *
  * @param script guest code.
  * @param scope an object whose properties will be exposed to the guest code. 
@@ -50,7 +51,7 @@ function chainchomp(script, scope, options){
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    // table of arguments and values
+    // table of exposed objects
     var exposed = {
         'Object'            : Object,
         'String'            : String,
@@ -81,7 +82,7 @@ function chainchomp(script, scope, options){
         'encodeURIComponent': encodeURIComponent
     };
 
-    // seal standard library objects
+    // freeze standard library objects
     Object.getOwnPropertyNames(exposed).forEach(function(k, i){
         var v = exposed[k];
         if(v && (typeof v === 'object' || typeof v === 'function')){
@@ -134,11 +135,29 @@ function chainchomp(script, scope, options){
     var f = construct(Function, args);
 
     // Function.__proto__ protection hack
-    f.apply = Function.__proto__.apply;
-    var _apply = Function.__proto__.apply;
-    var _call = Function.__proto__.call;
-    Function.__proto__.apply = undefined;
-    Function.__proto__.call = undefined;
+    f.apply    = Function.__proto__.apply;
+    f.toString = Function.__proto__.toString;
+    var _apply       = Function.__proto__.apply;
+    var _call        = Function.__proto__.call;
+    var _bind        = Function.__proto__.bind;
+    var _constructor = Function.__proto__.constructor;
+    var _length      = Function.__proto__.length;
+    var _name        = Function.__proto__.name;
+    var _toString    = Function.__proto__.toString;
+    var _proto       = Function.__proto__.__proto__;
+    Function.__proto__.apply       = undefined;
+    Function.__proto__.call        = undefined;
+    Function.__proto__.bind        = undefined;
+    Function.__proto__.constructor = undefined;
+    Function.__proto__.length      = undefined;
+    Function.__proto__.name        = undefined;
+
+    // ISSUE:     
+    //     Function.__proto__.toString = undefined
+    // cause a crush in Chrome
+    Function.__proto__.toString    = function(){ return ""; };
+    
+    Function.__proto__._proto      = undefined;
 
     // call the sandboxed function
     try{
@@ -148,7 +167,14 @@ function chainchomp(script, scope, options){
             eval = _eval;
         }
 
-        Function.__proto__.call = _call;
-        Function.__proto__.apply = _apply;
+        Function.__proto__.constructor = _constructor;
+        Function.__proto__.bind        = _bind;
+        Function.__proto__.call        = _call;
+        Function.__proto__.apply       = _apply;
+        Function.__proto__.constructor = _constructor;
+        Function.__proto__.length      = _length;
+        Function.__proto__.name        = _name;
+        Function.__proto__.toString    = _toString;
+        Function.__proto__._proto      = _proto;
     }
 }
