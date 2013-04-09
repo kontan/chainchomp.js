@@ -87,3 +87,9 @@ test("primitive implicit conversion aceess", function() {
 	throws(function(){ chainchomp('var s = "hoge";\n s.__proto__.toString = function(){ return "hoge"; };'); });
 	ok("piyo".toString() !== "hoge");
 });
+
+test("eval replacement attack", function() {
+	throws(function(){ chainchomp('eval("1 + 2"); }'); });
+	throws(function(){ chainchomp('eval = function(){ return "Cracked"; }'); });
+	ok(eval("1 + 2") === 3);
+});
