@@ -1,83 +1,92 @@
-<!doctype html>
 <html>
-  <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="chrome=1">
-    <title>chainchomp.js by kontan</title>
-    <link rel="stylesheet" href="stylesheets/styles.css">
-    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
-    <script src="javascripts/respond.js"></script>
-    <!--[if lt IE 9]>
-      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
-    <![endif]-->
-    <!--[if lt IE 8]>
-    <link rel="stylesheet" href="stylesheets/ie.css">
-    <![endif]-->
-    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+	<head>
+		<title>chainchomp.js Prison Break Game</title>
+		<style>
+body {
+  background: #555;
+  font: normal sans-serif;
+}
 
-  </head>
-  <body>
-      <div id="header">
-        <nav>
-          <li class="fork"><a href="https://github.com/kontan/chainchomp.js">View On GitHub</a></li>
-          <li class="downloads"><a href="https://github.com/kontan/chainchomp.js/zipball/master">ZIP</a></li>
-          <li class="downloads"><a href="https://github.com/kontan/chainchomp.js/tarball/master">TAR</a></li>
-          <li class="title">DOWNLOADS</li>
-        </nav>
-      </div><!-- end header -->
+h1{
+    margin: 8px;
+    font-size: large;
+    color: white;
+}
 
-    <div class="wrapper">
+p{
+	color: white;
+	max-width: 40em;
+}
 
-      <section>
-        <div id="title">
-          <h1>chainchomp.js</h1>
-          <p>Lightweight JavaScript Sandbox</p>
-          <hr>
-          <span class="credits left">Project maintained by <a href="https://github.com/kontan">kontan</a></span>
-          <span class="credits right">Hosted on GitHub Pages &mdash; Theme by <a href="http://twitter.com/#!/michigangraham">mattgraham</a></span>
-        </div>
+#textarea{
+    width: 100%;
+    height: -webkit-calc(100% - 70px);
+    height: -moz-calc(100% - 70px);
+    height: 300px;
+    display: block;
+}
 
-        <h2>chainchomp.js: Lightweight JavaScript Sandbox</h2>
+#run{
+    padding: 8px;
+    margin: 8px;
+    display: block;
+    width: 120px;
+}
 
-<p><strong>This project is experimental. Some vulnerability may be found and the project may abort.</strong></p>
+#output{
+	color: white;
+}
+		</style>
+		<script type="text/javascript" src="../chainchomp.js"></script>
+		<script type="text/javascript" src="jquery-1.9.1.js"></script>
+		<script type="text/javascript">
+$(function(){
 
-<h2>Usage</h2>
-
-<p>To use chainchomp.js, add the following line to your html code:</p>
-
-<pre><code>&lt;script src="https://raw.github.com/kontan/chainchomp.js/master/chainchomp.js"&gt;&lt;/script&gt;
-</code></pre>
-
-<p>Now chainchomp.js provides only one function:</p>
-
-<pre><code>function chainchomp(script: string, scope?: any, options?: any): any;
-</code></pre>
-
-<h2>Example</h2>
-
-<pre><code>console.log(chainchomp('return 1 + 2'));    // prints "3"
-
-chainchomp('window.location = "http://example.com/"');    // TypeError
-
-chainchomp('puts("Hello, World!");', { puts: function(s){ console.log(s); } });    // prints "Hello, World!"
-</code></pre>
-
-<h2>Restriction</h2>
-
-<ul>
-<li>
-<strong><em>Some basic objects, such as <code>String</code>, <code>Number</code> and <code>Boolean</code> are freezed</em></strong>. (<code>Object.freeze</code>) It may influences all your codes after <code>chainchomp</code> is called.</li>
-<li>
-<code>eval</code> and <code>Function</code> are banned in guest codes. ( <code>eval === undefined &amp;&amp; Function === undefined</code> )</li>
-<li>All guest code runs under Strict mode. </li>
-</ul><h2>What's Chain Chomp?</h2>
-
-<p><a href="https://www.google.co.jp/search?q=Chain+Chomp&amp;tbm=isch">Chomp chomp!</a></p>
-      </section>
-
-    </div>
-    <!--[if !IE]><script>fixScale(document);</script><![endif]-->
+    function toString(o){
+        return o === undefined ? "undefined" : o === null ? "null" : o.toString();
+    }
     
-  </body>
+    function run(){
+    	var guestCode = $('#textarea').val();
+        try{
+            var result = chainchomp(guestCode);
+            $('#output').css('color', 'white');
+            $('#output').text('You said "' + toString(result) + '".');
+        }catch(e){
+            $('#output').css('color', 'red');
+            $('#output').text('A guard screamed "' + toString(e) + '!"');
+        }
+    }
+  
+    $('#textarea').val($('#textarea').text());
+    $('#run').click(run);
+    $('#textarea').keydown(function(e){
+        if(e.ctrlKey && e.keyCode === 13) run(); 
+    });
+    run();
+});
+		</script>
+	</head>
+	<body>
+		<h1>Break prison!</h1>
+
+		<p>Your job is fizzbuzz in this prison. "One, two, fizz, four, buzz....", day in and day out. Tired!
+		You decided to destroy this cramped prison but now there is nothing you can do except writing codes in the below text area and push the "Run" button. 
+		Mess up an entire this prison with your insidious code! 
+		</p>
+
+		<textarea id="textarea">// fizzbuzz
+var result = "";
+function fizzbuzz(n) {
+    for(var i = 1; i < n; i++){
+        result += ((i % 3 ? '' : 'Fizz') + (i %  5 ? '' : 'Buzz') || i) + ', ';
+    }
+}
+fizzbuzz(16);
+return result;
+		</textarea>
+
+		<input type="button" id="run" value="Run"  />
+		<p id="output"></p>
+	</body>
 </html>
