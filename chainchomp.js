@@ -15,7 +15,7 @@ function chainchomp(script, scope, options){
     // If the environment is changed, the picket will drop out.
     // You should remake a new picket each time as long as　you are so busy.
     // ------------------------------------------------------------------
-    // So, if the global object is changed, remake a picket.
+    // If the global object is changed, you must remake a picket.
     var picket = chainchomp.pick();
 
     // Next, get new Chain Chomp tied the picket. 
@@ -74,7 +74,10 @@ chainchomp.pick = (function(){
 
     function invokeSandboxedFunction(f, values, options){
         // evacuate properties of Function.__proto__
+        // Function.__proto__ === Function.prototype ??
         var evacuatedProperties = {};
+        evacuatedProperties.proto = Function.__proto__.__proto__;
+        Function.__proto__.__proto__ = undefined;      // Function.__proto__.__proto__ was freezed?
         Object.getOwnPropertyNames(Function.__proto__).forEach(function(k){
             evacuatedProperties[k] = Function.__proto__[k];
             Function.__proto__[k] = undefined;
@@ -92,20 +95,13 @@ chainchomp.pick = (function(){
         // evacuate eval
         var _eval = eval;
         
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         // ban eval ////////////////////////////////////////////////////////////////////////////////////////////////////
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         // eval is fatal security hole for this library and it must be banned.
         // However, In Chrome, replacing eval prevents watching expression in Dev tools.
-        // You should make eval enable only when you are debugging this library.  
-        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        // You should make eval enable only when you are debugging this library or your own guest codes.  
         if( ! options.enableEval){
            eval = undefined;
         }
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 
         // invoke sandboxed function ///////////////////////////////////////////////////////////////////////////////////
 
@@ -123,6 +119,7 @@ chainchomp.pick = (function(){
             Object.getOwnPropertyNames(Function.__proto__).forEach(function(k){ 
                 Function.__proto__[k] = evacuatedProperties[k];
             });  
+            Function.__proto__.__proto__ = evacuatedProperties.proto;
         }
     }
 
@@ -165,12 +162,13 @@ chainchomp.pick = (function(){
         if(v && (typeof v === 'object' || typeof v === 'function')){
             Object.freeze(v);
             freeze(v.prototype);
-            //freeze(v.__proto__);
+            if(typeof v !== 'function' && v.__proto__) freeze(v.__proto__);
         }        
     }
     Object.getOwnPropertyNames(stdlibs).forEach(function(k, i){
         freeze(stdlibs[k]);
     });
+    Object.freeze(Function.__proto__.__proto__);
 
     function createSnadboxedFunction(script, exposed, banned){
         var args = Object.keys(exposed).concat(banned.filter(function(b){ return ! (b in exposed); }));

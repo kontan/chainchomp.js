@@ -13,6 +13,10 @@ test("global object steal", function() {
    	strictEqual(chainchomp('return (function(){return this})();'), undefined);
    	throws(function(){ chainchomp('return ("global",eval)("this");'); }); 
    	throws(function(){ chainchomp('return new Function("return this")();'); }); 
+   	throws(function(){ chainchomp('return (function(){}).constructor("return this")();'); });
+   	strictEqual(chainchomp('return (function(){}).constructor;'), undefined);
+   	chainchomp('(function(){}).__proto__.apply = 100;');
+   	ok((function(){}).__proto__.apply !== 100);
 });
 
 test( "attacking window object", function() {
@@ -97,4 +101,10 @@ test("eval replacement attack", function() {
 test("undefined replacement attack", function() {
 	chainchomp('undefined = 100;');
 	ok(undefined !== 100);
+});
+
+test("function __proto__ attack", function() {
+	throws(function(){ chainchomp('(function(){}).__proto__.__defineGetter__ = 100;'); });
+	chainchomp('(function(){}).__proto__.__defineGetter__.__proto__ = 100;');
+	ok((function(){}).__proto__.__defineGetter__.__proto__ !== 100);
 });
