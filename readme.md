@@ -1,4 +1,4 @@
-Lightweight JavaScript Sandbox
+chainchomp.js: Lightweight JavaScript Sandbox
 ------------------------------
 
 **This project is experimental. Some vulnerability may be found and the project may abort.**
@@ -26,3 +26,8 @@ Now chainchomp.js provides only one function:
 * ***Some basic objects, such as `String`, `Number` and `Boolean` are freezed***. (`Object.freeze`) It may influences all your codes after `chainchomp` called.
 * `eval` and `Function` are banned in guest codes. ( `eval === undefined && Function === undefined` )
 * All guest code runs under Strict mode. 
+
+
+## What's Chain Chomp?
+
+[Chomp chomp!](https://www.google.co.jp/search?q=Chain+Chomp&tbm=isch)

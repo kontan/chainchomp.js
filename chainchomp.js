@@ -1,18 +1,13 @@
-/**
- * function chainchomp(script: string, scope?: any = {}, options?: { enableEval?: bool } = {}): any;
- * 
+/** 
  * Invoke untrusted guest code in a sandbox.
  * The guest code can access objects of the standard library of ECMAScript.
  *
- * ## Restrictions
- *
- * * Some objects are banned: eval, Function, etc..
- * * Strict mode only. All guest code are run under the strict mode automatically.
- * * String, Number, Boolean are freezed.
+ * function chainchomp(script: string, scope?: any = {}, options?: { enableEval?: bool } = {}): any;
  *
  * @param script guest code.
  * @param scope an object whose properties will be exposed to the guest code. 
- * @param options options object. If a "enableEval" property is true, the guest code can get the global object and the host code will be exposed to risk.    
+ * @param options options object. If a "enableEval" property is true, the guest code can get the global object and the host code will be exposed to risk.
+ * @return result of the process.
  */
 function chainchomp(script, scope, options){
     // Dynamic instantiation idiom
@@ -141,7 +136,7 @@ function chainchomp(script, scope, options){
     // ban eval ////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // eval is fatal security hole for this library and it must be banned.
-    // However, In Chrome, replacing eval prevents watching expression.
+    // However, In Chrome, replacing eval prevents watching expression in Dev tools.
     // You should make eval enable only when you are debugging this library.  
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
     if( ! options.enableEval){

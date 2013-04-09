@@ -93,3 +93,8 @@ test("eval replacement attack", function() {
 	throws(function(){ chainchomp('eval = function(){ return "Cracked"; }'); });
 	ok(eval("1 + 2") === 3);
 });
+
+test("undefined replacement attack", function() {
+	chainchomp('undefined = 100;');
+	ok(undefined !== 100);
+});
