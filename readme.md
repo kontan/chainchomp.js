@@ -21,6 +21,10 @@ Now chainchomp.js provides only one function:
 
     chainchomp('puts("Hello, World!");', { puts: function(s){ console.log(s); } });    // prints "Hello, World!"
 
+## Demo
+
+Let's play in [Demo page](http://kontan.github.io/chainchomp.js) and report vulnerability.
+
 ## Restriction
 
 * ***Some basic objects, such as `String`, `Number` and `Boolean` are freezed***. (`Object.freeze`) It may influences all your codes after `chainchomp` is called.
