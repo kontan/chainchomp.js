@@ -23,7 +23,7 @@ Now chainchomp.js provides only one function:
 
 ## Restriction
 
-* ***Some basic objects, such as `String`, `Number` and `Boolean` are freezed***. (`Object.freeze`) It may influences all your codes after `chainchomp` called.
+* ***Some basic objects, such as `String`, `Number` and `Boolean` are freezed***. (`Object.freeze`) It may influences all your codes after `chainchomp` is called.
 * `eval` and `Function` are banned in guest codes. ( `eval === undefined && Function === undefined` )
 * All guest code runs under Strict mode. 
 
