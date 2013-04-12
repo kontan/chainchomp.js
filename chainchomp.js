@@ -1,4 +1,3 @@
-
 /** 
  * Invoke untrusted guest code in a sandbox.
  * The guest code can access objects of the standard library of ECMAScript.
@@ -27,10 +26,13 @@ function chainchomp(script, scope, options){
     // Last, feed the chomp and let it rampage! 
     // A chomp eats nothing but　a kind of feed that the chomp ate at first.  
     // ----------------------------------------------------------------------
-    // If only scope is changed, you need not to remake the Chain Chomp and the picket.
+    // If only a value in the scope object is changed, you need not to remake the Chain Chomp and the picket.
     return chomp(scope);
 }
 
+/**
+ * create sandbox
+ */
 chainchomp.pick = (function(){
     // Dynamic instantiation idiom
     // http://stackoverflow.com/questions/1606797/use-of-apply-with-new-operator-is-this-possible
@@ -46,7 +48,7 @@ chainchomp.pick = (function(){
         // correct banned object names.
         var banned = ['__proto__', 'prototype'];
         function ban(k){
-            if(banned.indexOf(k) < 0 && k !== 'eval' && k.match(/^[_$a-zA-Z][_$a-zA-Z0-9]*$/)){
+            if(k && banned.indexOf(k) < 0 && k !== 'eval' && k.match(/^[_$a-zA-Z][_$a-zA-Z0-9]*$/)){
                 banned.push(k);
             }
         }
@@ -58,69 +60,15 @@ chainchomp.pick = (function(){
 
         // ban all ids of the elements
         function traverse(elem){
-            var id = elem.getAttribute && elem.getAttribute('id');
-            if(id){
-                ban(id);
-            }
+            ban(elem.getAttribute && elem.getAttribute('id'));
             var childs = elem.childNodes;
             for(var i = 0; i < childs.length; i++){
                 traverse(childs[i]);
             }
-        }    
+        }
         traverse(document);
 
         return banned;
-    }
-
-    function invokeSandboxedFunction(f, values, options){
-        // evacuate properties of Function.__proto__
-        // Function.__proto__ === Function.prototype ??
-        var evacuatedProperties = {};
-        evacuatedProperties.proto = Function.__proto__.__proto__;
-        Function.__proto__.__proto__ = undefined;      // Function.__proto__.__proto__ was freezed?
-        Object.getOwnPropertyNames(Function.__proto__).forEach(function(k){
-            evacuatedProperties[k] = Function.__proto__[k];
-            Function.__proto__[k] = undefined;
-        });
-
-        // ISSUE:     
-        //     Function.__proto__.toString = undefined
-        // cause a crush in Chrome
-        Function.__proto__.toString    = function(){ return ""; };
-
-        // Function.apply enabling　hack
-        f.apply    = evacuatedProperties['apply'];
-        f.toString = evacuatedProperties['toString'];
-
-        // evacuate eval
-        var _eval = eval;
-        
-        // ban eval ////////////////////////////////////////////////////////////////////////////////////////////////////
-        // eval is fatal security hole for this library and it must be banned.
-        // However, In Chrome, replacing eval prevents watching expression in Dev tools.
-        // You should make eval enable only when you are debugging this library or your own guest codes.  
-        if( ! options.enableEval){
-           eval = undefined;
-        }
-
-        // invoke sandboxed function ///////////////////////////////////////////////////////////////////////////////////
-
-        // call the sandboxed function
-        try{
-            return f.apply(undefined, values);
-        }finally{
-
-            // postprocess /////////////////////////////////////////////////////////////////////////////////////////////
-
-            // restore eval
-            eval = _eval;
-
-            // restore properties of Function.__proto__
-            Object.getOwnPropertyNames(Function.__proto__).forEach(function(k){ 
-                Function.__proto__[k] = evacuatedProperties[k];
-            });  
-            Function.__proto__.__proto__ = evacuatedProperties.proto;
-        }
     }
 
     // table of exposed objects
@@ -156,58 +104,107 @@ chainchomp.pick = (function(){
         };
     }
 
-    // freeze exposed objects
-    var stdlibs = getStdlibs();
-    function freeze(v){
-        if(v && (typeof v === 'object' || typeof v === 'function')){
-            Object.freeze(v);
-            freeze(v.prototype);
-            if(typeof v !== 'function' && v.__proto__) freeze(v.__proto__);
-        }        
-    }
-    Object.getOwnPropertyNames(stdlibs).forEach(function(k, i){
-        freeze(stdlibs[k]);
-    });
-    Object.freeze(Function.__proto__.__proto__);
+    var isFreezedStdLibObjs = false;
 
-    function createSnadboxedFunction(script, exposed, banned){
-        var args = Object.keys(exposed).concat(banned.filter(function(b){ return ! (b in exposed); }));
-        args.push('"use strict";\n' + script);
-        return construct(Function, args);        
-    }
-
+    /**
+     * create sandbox.
+     */
     return function(){
+        if(isFreezedStdLibObjs == false){
+            var stdlibs = getStdlibs();
+
+            function freeze(v){
+                if(v && (typeof v === 'object' || typeof v === 'function') && ! Object.isFrozen(v)){
+                    Object.freeze(v);
+                    Object.getOwnPropertyNames(v).forEach(function(k, i){
+                        var value;
+                        try{
+                            value = v[k];                                
+                        }catch(e){
+                            // do notiong
+                        }
+                        freeze(value);
+                    });
+                }
+            }
+            freeze(stdlibs);
+            
+            // freeze Function.prototype
+            Object.defineProperty(Function.prototype, "constructor", {
+                enumerable: false,
+                get: function(){ throw new ReferenceError('Access to "Function.prototype.constructor" is not allowed.') },
+                set: function(){ throw new ReferenceError('Access to "Function.prototype.constructor" is not allowed.') }
+            });
+            freeze(Function);
+
+            isFreezedStdLibObjs = true;
+        }
 
         var banned = getBannedVars();
-        
-        return function(script, scope, options){ 
+
+        /**
+         * create sandboxed function.
+         */
+        return function(script, defaultScope, options){ 
             // validate arguments
             if( ! (typeof script === 'string' || script instanceof String )){
                 throw new TypeError();
             }
 
             // store default values of the parameter
-            scope = scope || {};
+            defaultScope = defaultScope || {};
             options = options || {};
 
             // Expose custom properties 
-            var exposed = getStdlibs();
-            Object.keys(scope).forEach(function(k){
-                exposed[k] = scope[k];
+            var guestGlobal = getStdlibs();
+            Object.keys(defaultScope).forEach(function(k){
+                guestGlobal[k] = defaultScope[k];
             });
 
             // create sandboxed function
-            var f = createSnadboxedFunction(script, exposed, banned);      
-            
+            var args = Object.keys(guestGlobal).concat(banned.filter(function(b){ return ! guestGlobal.hasOwnProperty(b); }));
+            args.push('"use strict";\n' + script);
+            var functionObject = construct(Function, args);
+
+            /**
+             * Invoke sandboxed function.
+             */            
             return function(scope){
-                scope = scope || {};
-                var args = Object.keys(exposed);
-                var values = [];
-                for(var i = 0; i < args.length; i++){
-                    var key = args[i];
-                    values.push(key in scope ? scope[key] : exposed[key]);
-                }    
-                return invokeSandboxedFunction(f, values, options);
+                // evacuate eval
+                var _eval = eval;
+                
+                // ban eval ////////////////////////////////////////////////////////////////////////////////////////////////////
+                // eval is fatal security hole for this library and it must be banned.
+                // However, In Chrome, replacing eval prevents watching expression in Dev tools.
+                // You should make eval enable only when you are debugging this library or your own guest codes.  
+                if( ! options.enableEval){
+                   eval = undefined;
+                }
+
+                 // call the sandboxed function
+                try{
+                    // restore default values
+                    Object.keys(defaultScope).forEach(function(key){
+                        guestGlobal[key] = defaultScope[key];
+                    });
+                    // store current scope values
+                    if(scope){                
+                        Object.keys(scope).forEach(function(key){
+                            if(guestGlobal.hasOwnProperty(key)){
+                                guestGlobal[key] = scope[key];
+                            }else{
+                                throw new TypeError('Unexpected property in scoope: ' + key);
+                            }
+                        });
+                    }
+
+                    // call
+                    var params = Object.keys(guestGlobal).map(function(k){ return guestGlobal[k]; });
+                    return functionObject.apply(undefined, params);
+                }finally{
+                    // restore eval
+                    eval = _eval;
+                }
             };
         };
     };

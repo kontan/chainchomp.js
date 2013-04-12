@@ -1,3 +1,57 @@
+test("pretest", function() {
+	// A guest code can get the Global object with Function construtor
+	// So Function must be banned.
+	ok(window === new Function('return this')())
+
+	// Function.prototype is readonly
+	Function.prototype = 'hoge';
+	ok(Function != 'hoge');
+
+	// can get Function via Function.prototype.constructor
+	ok(Function.prototype.constructor === Function);
+
+	// So, a guest code can get Function via annonymous function and __proto__
+	ok((function(){}).__proto__.constructor === Function)
+
+	// Function.prototype.constructor must be overwrited
+	Function.prototype.constructor = undefined;
+	throws(function(){ (function(){}).__proto__.constructor('return this') }, TypeError);
+	Function.prototype.constructor = Function;
+
+	// Or any stub function should be provided?
+	// It will removes a error but I think it makes no sence...
+	Function.prototype.constructor = function(){ return function(){}; };
+	ok((function(){}).__proto__.constructor('return this')() === undefined);
+	Function.prototype.constructor = Function;
+	ok(Function.prototype.constructor === Function);
+
+	// In Strict mode, undefined is read only 
+	throws(function(){'use strict'; undefined = "hoge";	}, TypeError);
+
+	// In Strict mode, null is invalid as left side value 
+	throws(function(){'use strict'; null = "hoge";	}, ReferenceError);
+
+	// some global object is readonly but some one is not...
+	
+	// NaN behavior
+	ok(NaN !== NaN); // NaN is mysterious ...
+	ok(NaN !== Number.NaN);
+	ok(isNaN(NaN) && isNaN(Number.NaN));
+	NaN = "hoge"; // NaN is readonly
+	ok(NaN !== "hoge");	
+	NaN.hoge = "hoge";
+	ok(NaN.hoge !== "hoge");
+	var nan = NaN;
+	nan.hoge = "hoge";
+	ok(nan.hoge !== "hoge");
+
+	// decodeURIComponent is not readonly
+	var _decodeURIComponent = decodeURIComponent;
+	decodeURIComponent = "hoge";
+	ok(decodeURIComponent === "hoge");
+	decodeURIComponent = _decodeURIComponent;
+});
+
 test("general evalution", function() {
 	strictEqual(chainchomp('return 1 + 2 * 3 - 4;'), 1 + 2 * 3 - 4);
 	strictEqual(chainchomp('return Math.sin(3.14);'), Math.sin(3.14));
@@ -5,22 +59,26 @@ test("general evalution", function() {
 });
 
 test("strict mode violation", function() {
-	throws(function(){ chainchomp('foo = 100;'); });
+	throws(function(){ chainchomp('foo = 100;'); }, ReferenceError);
+	throws(function(){ chainchomp('var x; delete x;'); }, SyntaxError);
+	throws(function(){ chainchomp('return arguments.callee;'); }, TypeError);
 });
 
 test("global object steal", function() {
+	strictEqual(chainchomp('return window;'), undefined);
 	strictEqual(chainchomp('return this;'), undefined);
    	strictEqual(chainchomp('return (function(){return this})();'), undefined);
    	throws(function(){ chainchomp('return ("global",eval)("this");'); }); 
    	throws(function(){ chainchomp('return new Function("return this")();'); }); 
    	throws(function(){ chainchomp('return (function(){}).constructor("return this")();'); });
-   	strictEqual(chainchomp('return (function(){}).constructor;'), undefined);
-   	chainchomp('(function(){}).__proto__.apply = 100;');
+   	throws(function(){ chainchomp('return (function(){}).constructor;'); }, ReferenceError);
+   	throws(function(){ chainchomp('(function(){}).__proto__.apply = 100;'); }, TypeError);
    	ok((function(){}).__proto__.apply !== 100);
 });
 
-test( "attacking window object", function() {
-   	throws(function(){ chainchomp('window.location = "http://example.com/";'); });
+test( "window object aceess", function() {
+   	throws(function(){ chainchomp('window.location = "http://example.com/";'); }, TypeError);
+   	throws(function(){ chainchomp('__proto__.hoge = "hoge"'); }, TypeError);   	
 });
 
 test( "callback safety", function() {
@@ -81,10 +139,7 @@ test("direct id acccess", function() {
 
 test("function properties acccess", function() {
 	throws(function(){ chainchomp('var f = function(){};\n return f.constructor.apply(undefined, ["return this"]);'); });
-	throws(function(){ chainchomp('var f = function(){};\n return f.constructor.call(undefined, "return this");'); });  
-
-	throws(function(){ chainchomp('var f = function(){};\n return f.__proto__.apply(undefined, ["return this"]);'); });
-	throws(function(){ chainchomp('var f = function(){};\n return f.__proto__.call(undefined, "return this");'); });    
+	throws(function(){ chainchomp('var f = function(){};\n return f.constructor.call(undefined, "return this");'); });   
 });
 
 test("primitive implicit conversion aceess", function() {
@@ -107,4 +162,24 @@ test("function __proto__ attack", function() {
 	throws(function(){ chainchomp('(function(){}).__proto__.__defineGetter__ = 100;'); });
 	chainchomp('(function(){}).__proto__.__defineGetter__.__proto__ = 100;');
 	ok((function(){}).__proto__.__defineGetter__.__proto__ !== 100);
+});
+
+test("primitive __proto__ overwriting attack", function() {
+	throws(function(){ chainchomp('(0).__proto__.toString = function(){ return "hoge"; };'); });
+	ok((0).__proto__.toString() === "0");
+	ok((0).toString() === "0");
+	ok((0) + "" === "0");
+
+	throws(function(){ chainchomp('/a/.__proto__.toString = function(){ return "hoge"; };'); });
+	strictEqual(/a/.toString(), "/a/");
+
+	throws(function(){ chainchomp('new Date().__proto__.toString = function(){ return "hoge"; };'); });
+	throws(function(){ chainchomp('new Date().toString = function(){ return "hoge"; };'); });
+	ok(new Date().toString() !== "hoge");
+
+});
+
+
+test("function property test", function() {
+	throws(function(){ chainchomp('return (function(){}).constructor("return this;");'); });
 });

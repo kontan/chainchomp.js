@@ -17,11 +17,35 @@ Now chainchomp.js provides only one function:
 
 ## Examples
 
-    console.log(chainchomp('return 1 + 2'));    // prints "3"
+Basic evaluation:
 
-    chainchomp('window.location = "http://example.com/"');    // causes TypeError
+    console.log(chainchomp('return 1 + 2'));    
+    // prints "3"
 
-    chainchomp('puts("Hello, World!");', { puts: function(s){ console.log(s); } });    // prints "Hello, World!"
+Unexpected page jumping attack:
+
+    chainchomp('window.location = "http://example.com/"');    
+    // causes TypeError
+
+Passing custom properties:
+
+	var scope = { puts: function(s){ console.log(s); } };
+    chainchomp('puts("Hello, World!");', scope);
+    // prints "Hello, World!"
+
+Callback to guest codes:
+
+	var scope = { puts: function(s){ console.log(s); } };
+	var f = chainchomp('puts(new Date())', scope);
+    setInterval(f, 1000);
+    // prints datetime every seconds
+
+Invalid callback attack:
+
+    var scope = { puts: function(s){ console.log(s); } };
+    var f = chainchomp('window.location = "http://example.com/";', scope);
+    setInterval(f, 1000);
+    // causes TypeError    
 
 ## Demo
 

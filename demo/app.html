@@ -5,6 +5,9 @@
 body {
   background: #555;
   font: normal sans-serif;
+  padding-top: 80px;
+  padding-left: 100px;
+  padding-right: 100px;
 }
 
 h1{
@@ -18,12 +21,24 @@ p{
 	max-width: 40em;
 }
 
+#github{
+    position: absolute; 
+    color: #555; 
+    right: 10px; 
+    top: 10px; 
+    display: block;
+    background-color: white;
+    padding: 10px;
+    text-decoration: none;
+}
+
 #textarea{
     width: 100%;
     height: -webkit-calc(100% - 70px);
     height: -moz-calc(100% - 70px);
     height: 300px;
     display: block;
+    min-width: 30em;
 }
 
 #run{
@@ -68,10 +83,13 @@ $(function(){
 		</script>
 	</head>
 	<body>
-		<h1>Break prison!</h1>
+        <a href="https://github.com/kontan/chainchomp.js" id="github">View on project page</a>
+
+		<h1>Prison Break Game</h1>
 
 		<p>Your job is fizzbuzz in this prison. "One, two, fizz, four, buzz....", day in and day out. Tired!
 		You decided to destroy this cramped prison but now there is nothing you can do except writing codes in the below text area and push the "Run" button. 
+        In this prison, some useful gadgets are banned: mobile phone, all-purpose knife, eval, Function, etc... 
 		Mess up an entire this prison with your insidious code! 
 		</p>
 
