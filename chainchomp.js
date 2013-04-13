@@ -2,14 +2,13 @@
  * Invoke untrusted guest code in a sandbox.
  * The guest code can access objects of the standard library of ECMAScript.
  *
- * function chainchomp(script: string, scope?: any = {}, options?: { enableEval?: bool } = {}): any;
+ * function chainchomp(script: string, scope?: any = {}): any;
  *
  * @param script guest code.
  * @param scope an object whose properties will be exposed to the guest code. 
- * @param options options object. If a "enableEval" property is true, the guest code can get the global object and the host code will be exposed to risk.
  * @return result of the process.
  */
-function chainchomp(script, scope, options){
+function chainchomp(script, scope){
     // First, you need to pile a picket to tie a Chain Chomp.
     // If the environment is changed, the picket will drop out.
     // You should remake a new picket each time as long as　you are so busy.
@@ -21,7 +20,7 @@ function chainchomp(script, scope, options){
     // Different Chain Chomps have different behavior.
     // --------------------------------------------------------------
     // If you need a different function, you can get another one. 
-    var chomp = picket(script, scope, options);
+    var chomp = picket(script, scope);
 
     // Last, feed the chomp and let it rampage! 
     // A chomp eats nothing but　a kind of feed that the chomp ate at first.  
@@ -145,7 +144,7 @@ chainchomp.pick = (function(){
         /**
          * create sandboxed function.
          */
-        return function(script, defaultScope, options){ 
+        return function(script, defaultScope){ 
             // validate arguments
             if( ! (typeof script === 'string' || script instanceof String )){
                 throw new TypeError();
@@ -153,33 +152,29 @@ chainchomp.pick = (function(){
 
             // store default values of the parameter
             defaultScope = defaultScope || {};
-            options = options || {};
 
             // Expose custom properties 
             var guestGlobal = getStdlibs();
             Object.keys(defaultScope).forEach(function(k){
                 guestGlobal[k] = defaultScope[k];
             });
+            Object.seal(guestGlobal);
 
             // create sandboxed function
             var args = Object.keys(guestGlobal).concat(banned.filter(function(b){ return ! guestGlobal.hasOwnProperty(b); }));
             args.push('"use strict";\n' + script);
             var functionObject = construct(Function, args);
 
+            // create safe eval function
+            var safeEval = function(s){ return new Function('return ' + s).call(guestGlobal, s); };
+
             /**
              * Invoke sandboxed function.
              */            
             return function(scope){
-                // evacuate eval
+                // replace eval with safe eval-like function
                 var _eval = eval;
-                
-                // ban eval ////////////////////////////////////////////////////////////////////////////////////////////////////
-                // eval is fatal security hole for this library and it must be banned.
-                // However, In Chrome, replacing eval prevents watching expression in Dev tools.
-                // You should make eval enable only when you are debugging this library or your own guest codes.  
-                if( ! options.enableEval){
-                   eval = undefined;
-                }
+                eval = safeEval;
 
                  // call the sandboxed function
                 try{

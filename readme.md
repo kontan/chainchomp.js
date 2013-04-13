@@ -53,8 +53,10 @@ Let's play in [Demo page](http://kontan.github.io/chainchomp.js) and please repo
 
 ## Restriction
 
-* ***Some basic objects, such as `String`, `Number` and `Boolean` are freezed***. (`Object.freeze`) It may influences all your codes after `chainchomp` is called.
-* `eval` and `Function` are banned in guest codes. ( `eval === undefined && Function === undefined` )
+* ***Some basic objects, such as `String`, `Number` and `Boolean` are freezed in guest codes and host codes.*** It may influences all your codes after first `chainchomp()` calling.
+* `Function` are banned in guest codes. ( `Function === undefined` )
+* `eval` are qualified　available in guest codes. 
+* `Function.prototype.constructor` are banned. ()
 * All guest code runs under Strict mode. 
 * Can't detect infinite loops in codes.
 
