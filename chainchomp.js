@@ -26,7 +26,7 @@ function chainchomp(script, scope){
     // A chomp eats nothing but　a kind of feed that the chomp ate at first.  
     // ----------------------------------------------------------------------
     // If only a value in the scope object is changed, you need not to remake the Chain Chomp and the picket.
-    return chomp(scope);
+    return chomp();
 }
 
 /**
@@ -144,19 +144,20 @@ chainchomp.pick = (function(){
         /**
          * create sandboxed function.
          */
-        function createSandboxedFunction(script, defaultScope){ 
+        var createSandboxedFunction = function(script, scope){ 
             // validate arguments
             if( ! (typeof script === 'string' || script instanceof String )){
                 throw new TypeError();
             }
 
             // store default values of the parameter
-            defaultScope = defaultScope || {};
+            scope = scope || {};
+            Object.seal(scope);
 
             // Expose custom properties 
             var guestGlobal = getStdlibs();
-            Object.keys(defaultScope).forEach(function(k){
-                guestGlobal[k] = defaultScope[k];
+            Object.keys(scope).forEach(function(k){
+                guestGlobal[k] = scope[k];
             });
             Object.seal(guestGlobal);
 
@@ -165,41 +166,33 @@ chainchomp.pick = (function(){
             args.push('"use strict";\n' + script);
             var functionObject = construct(Function, args);
 
+            var safeEval = function(s){ 
+                return createSandboxedFunction("return " + s, guestGlobal)(); 
+            };
+
             /**
              * Invoke sandboxed function.
              */            
-            return function(scope){
+            return function(){
                 // replace eval with safe eval-like function
                 var _eval = eval;
-                eval = undefined;
-
+                eval = safeEval;
+                
                  // call the sandboxed function
                 try{
                     // restore default values
-                    Object.keys(defaultScope).forEach(function(key){
-                        guestGlobal[key] = defaultScope[key];
+                    Object.keys(scope).forEach(function(k){
+                        guestGlobal[k] = scope[k];
                     });
-                    // store current scope values
-                    if(scope){                
-                        Object.keys(scope).forEach(function(key){
-                            if(guestGlobal.hasOwnProperty(key)){
-                                guestGlobal[key] = scope[key];
-                            }else{
-                                throw new TypeError('Unexpected property in scoope: ' + key);
-                            }
-                        });
-                    }
 
                     // call
                     var params = Object.keys(guestGlobal).map(function(k){ return guestGlobal[k]; });
                     return functionObject.apply(undefined, params);
                 }finally{
-                    // restore eval
                     eval = _eval;
                 }
             };
         };
-
         return createSandboxedFunction;
     };
 })();

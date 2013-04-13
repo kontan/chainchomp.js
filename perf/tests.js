@@ -23,6 +23,6 @@ test("chainchomp", function(){
 	var chomp = picket(fizzbuzz_str, scope);
 	for(var i = 0; i < COUNT; i++){
 		scope.i = i;
-		console.log(chomp(scope));
+		console.log(chomp());
 	}
 });
