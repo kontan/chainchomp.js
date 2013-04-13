@@ -144,7 +144,7 @@ chainchomp.pick = (function(){
         /**
          * create sandboxed function.
          */
-        return function(script, defaultScope){ 
+        function createSandboxedFunction(script, defaultScope){ 
             // validate arguments
             if( ! (typeof script === 'string' || script instanceof String )){
                 throw new TypeError();
@@ -165,16 +165,13 @@ chainchomp.pick = (function(){
             args.push('"use strict";\n' + script);
             var functionObject = construct(Function, args);
 
-            // create safe eval function
-            var safeEval = function(s){ return new Function('return ' + s).call(guestGlobal, s); };
-
             /**
              * Invoke sandboxed function.
              */            
             return function(scope){
                 // replace eval with safe eval-like function
                 var _eval = eval;
-                eval = safeEval;
+                eval = undefined;
 
                  // call the sandboxed function
                 try{
@@ -202,5 +199,7 @@ chainchomp.pick = (function(){
                 }
             };
         };
+
+        return createSandboxedFunction;
     };
 })();

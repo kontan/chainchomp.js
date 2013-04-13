@@ -56,7 +56,6 @@ test("general evalution", function() {
 	strictEqual(chainchomp('return 1 + 2 * 3 - 4;'), 1 + 2 * 3 - 4);
 	strictEqual(chainchomp('return Math.sin(3.14);'), Math.sin(3.14));
 	strictEqual(chainchomp('return encodeURIComponent("http://example.com/");'), "http%3A%2F%2Fexample.com%2F");
-	strictEqual(chainchomp('return eval("100")'), 100);
 });
 
 test("strict mode violation", function() {
@@ -69,13 +68,13 @@ test("global object steal", function() {
 	strictEqual(chainchomp('return window;'), undefined);
 	strictEqual(chainchomp('return this;'), undefined);
    	strictEqual(chainchomp('return (function(){return this})();'), undefined);
-   	ok(chainchomp('return ("global",eval)("this");') !== window); 
-   	ok(chainchomp('return ("global",eval)("this");') !== undefined); 
+   	throws(function(){ chainchomp('return ("global",eval)("this");'); }); 
+   	throws(function(){ chainchomp('return ("global",eval)("this");'); }); 
    	throws(function(){ chainchomp('return new Function("return this")();'); }); 
    	throws(function(){ chainchomp('return (function(){}).constructor("return this")();'); });
    	throws(function(){ chainchomp('return (function(){}).constructor;'); }, ReferenceError);
    	throws(function(){ chainchomp('(function(){}).__proto__.apply = 100;'); }, TypeError);
-   	ok((function(){}).__proto__.apply !== 100);
+   	ok((function(){}).__proto__.apply !== 100); 
 });
 
 test( "window object aceess", function() {

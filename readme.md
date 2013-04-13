@@ -29,14 +29,14 @@ Unexpected page jumping attack:
 
 Passing custom properties:
 
-	var scope = { puts: function(s){ console.log(s); } };
+    var scope = { puts: function(s){ console.log(s); } };
     chainchomp('puts("Hello, World!");', scope);
     // prints "Hello, World!"
 
 Callback to guest codes:
 
-	var scope = { puts: function(s){ console.log(s); } };
-	var f = chainchomp('puts(new Date())', scope);
+    var scope = { puts: function(s){ console.log(s); } };
+    var f = chainchomp('puts(new Date())', scope);
     setInterval(f, 1000);
     // prints datetime every seconds
 
@@ -53,10 +53,13 @@ Let's play in [Demo page](http://kontan.github.io/chainchomp.js) and please repo
 
 ## Restriction
 
-* ***Some basic objects, such as `String`, `Number` and `Boolean` are freezed in guest codes and host codes.*** It may influences all your codes after first `chainchomp()` calling.
+* **You should set a custom property to objects exposed at guest codes with extreme caution.**　For example, in host code, `Number.prototype.window = window` breaks the sandbox because the guest code steal the global object via `Number.prototype.window`. This library can't fix that kinds of vulnerability. 
+
+* **The global objects, such as `String`, `Array` and `decodeURI` are freezed in both of host codes and guest codes.**
+
 * `Function` are banned in guest codes. ( `Function === undefined` )
-* `eval` are qualified　available in guest codes. 
-* `Function.prototype.constructor` are banned. ()
+* `eval` are banned in guest codes. ( `eval === undefined` )
+* `Function.prototype.constructor` are banned. (`Function.prototype.constructor === undefined`)
 * All guest code runs under Strict mode. 
 * Can't detect infinite loops in codes.
 
