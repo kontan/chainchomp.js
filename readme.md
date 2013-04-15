@@ -44,15 +44,15 @@ Passing custom properties:
 Callback to guest codes:
 
     var scope = { puts: function(s){ console.log(s); } };
-    var f = chainchomp('puts(new Date())', scope);
-    setInterval(f, 1000);
+    var f = chainchomp('return function(){ puts(new Date()); }', scope);
+    setInterval(function(){ chainchomp.callback(f); }, 1000);
     // prints datetime every seconds
 
 Invalid callback attack:
 
     var scope = { puts: function(s){ console.log(s); } };
-    var f = chainchomp('window.location = "http://example.com/";', scope);
-    setInterval(f, 1000);
+    var f = chainchomp('return function(){ window.location = "http://example.com/"; }', scope);
+    setInterval(function(){ chainchomp.callback(f); }, 1000);
     // causes TypeError    
 
 ## Demo

@@ -8,7 +8,7 @@
  * @param scope an object whose properties will be exposed to the guest code. 
  * @return result of the process.
  */
-function chainchomp(script, scope){
+function chainchomp(script, scope, options){
     // First, you need to pile a picket to tie a Chain Chomp.
     // If the environment is changed, the picket will drop out.
     // You should remake a new picket each time as long as　you are so busy.
@@ -26,7 +26,7 @@ function chainchomp(script, scope){
     // A chomp eats nothing but　a kind of feed that the chomp ate at first.  
     // ----------------------------------------------------------------------
     // If only a value in the scope object is changed, you need not to remake the Chain Chomp and the picket.
-    return chomp();
+    return chomp(options);
 }
 
 /**
@@ -169,14 +169,19 @@ chainchomp.pick = (function(){
             var safeEval = function(s){ 
                 return createSandboxedFunction("return " + s, guestGlobal)(); 
             };
+            Object.freeze(safeEval);
 
             /**
              * Invoke sandboxed function.
              */            
-            return function(){
+            var invokeSandboxedFunction = function(options){
+                options = options || {};
+
                 // replace eval with safe eval-like function
                 var _eval = eval;
-                eval = safeEval;
+                if(options.debug !== true){
+                    eval = safeEval;
+                }
                 
                  // call the sandboxed function
                 try{
@@ -192,7 +197,27 @@ chainchomp.pick = (function(){
                     eval = _eval;
                 }
             };
+
+            return invokeSandboxedFunction;
         };
         return createSandboxedFunction;
     };
 })();
+
+// 
+chainchomp.callback = function(callback, args, options){
+    options = options || {};
+    args = args || [];
+
+    // replace eval with safe eval-like function
+    var _eval = eval;
+    if(options.debug !== true){
+        eval = undefined;
+    }
+    
+    try{
+        return callback.apply(undefined, args);
+    }finally{
+        eval = _eval;
+    }                
+};
